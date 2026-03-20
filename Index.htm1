@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pixel Puck Fury</title>
+    <style>
+        body { margin: 0; background: #1a1a2e; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Courier New', Courier, monospace; color: white; }
+        canvas { background: #cae9ff; border: 4px solid #ffffff; touch-action: none; cursor: crosshair; max-width: 95vw; max-height: 80vh; }
+        .ui { margin-bottom: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <h1>PIXEL PUCK FURY</h1>
+        <div id="score">GOALS: 0</div>
+    </div>
+    <canvas id="hockeyCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById("hockeyCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreEl = document.getElementById("score");
+
+        canvas.width = 400;
+        canvas.height = 500;
+
+        let score = 0;
+        let player = { x: 200, y: 400, size: 40 };
+        let puck = { x: 200, y: 200, vx: 0, vy: 0, size: 12 };
+
+        function handleInput(e) {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            player.x = (clientX - rect.left) - player.size / 2;
+            player.y = (clientY - rect.top) - player.size / 2;
+        }
+
+        canvas.addEventListener("mousemove", handleInput);
+        canvas.addEventListener("touchmove", handleInput, { passive: false });
+
+        function resetPuck() {
+            puck.x = canvas.width / 2;
+            puck.y = canvas.height / 2;
+            puck.vx = 0;
+            puck.vy = 0;
+        }
+
+        function gameLoop() {
+            // Physics
+            puck.x += puck.vx;
+            puck.y += puck.vy;
+            puck.vx *= 0.97;
+            puck.vy *= 0.97;
+
+            // Bounce off walls
+            if (puck.x < 0 || puck.x > canvas.width) puck.vx *= -1;
+            
+            // Goal Logic (Top of screen)
+            if (puck.y < 0) {
+                score++;
+                scoreEl.innerText = "GOALS: " + score;
+                resetPuck();
+            }
+            if (puck.y > canvas.height) puck.vy *= -1;
+
+            // Collision
+            let dx = puck.x - (player.x + player.size/2);
+            let dy = puck.y - (player.y + player.size/2);
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 30) {
+                puck.vx = dx * 0.3;
+                puck.vy = dy * 0.3;
+            }
+
+            // Draw
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Rink markings
+            ctx.strokeStyle = "rgba(255,0,0,0.3)";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.arc(200, 250, 50, 0, Math.PI*2);
+            ctx.stroke();
+
+            // Draw Player (The Mallet)
+            ctx.fillStyle = "#e94560";
+            ctx.fillRect(player.x, player.y, player.size, player.size);
+
+            // Draw Puck
+            ctx.fillStyle = "#0f3460";
+            ctx.beginPath();
+            ctx.arc(puck.x, puck.y, puck.size, 0, Math.PI*2);
+            ctx.fill();
+
+            requestAnimationFrame(gameLoop);
+        }
+        gameLoop();
+    </script>
+</body>
+</html>
